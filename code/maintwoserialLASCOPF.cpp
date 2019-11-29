@@ -307,13 +307,33 @@ int main() // function main begins program execution
 						powerSelfGen[i*numberOfGenerators+j]=*(futureNetVector[i+1]->getPowSelf()+j); // what I think about myself
 						powerNextBel[(i+numberOfCont)*numberOfGenerators+j]=*(futureNetVector[i+1]->getPowNext(0, (i+1))+j); // what I think about next door fellow
 						powerPrevBel[i*numberOfGenerators+j]=*(futureNetVector[i+1]->getPowPrev()+j); // what I think about previous interval
+						powerNextBel[(i+numberOfCont)*numberOfGenerators+j]=*(futureNetVector[i]->getPowNext(0, i)+j); // what I think about next door fellow
+						for (int continCounter=0; continCounter <= numberOfCont; ++continCounter) { // Inefficient: Better, should run only for the particular value of continCounter for the particular i
+							if (i!=((continCounter+1)*(RNDIntervals+RSDIntervals))) { // Make sure the last supernetworks for any post-cont scenario are left out
+								powDiff[2*(i+numberOfCont)*numberOfGenerators+j]=*(futureNetVector[i+1]->getPowSelf()+j)-*(futureNetVector[i+2]->getPowPrev()+j); // what I think about myself Vs. what next door fellow thinks about me
+								powDiff[(2*(i+numberOfCont)+1)*numberOfGenerators+j]=*(futureNetVector[i+1]->getPowNext(0, (i+1))+j)-*(futureNetVector[i+2]->getPowSelf()+j); // what I think about next door fellow Vs. what next door fellow thinks about himself
+							}
+						}
 					}
 				}
-			}
-			for ( int j = 0; j < numberOfGenerators; ++j ) {
-				powerSelfGen[(numberOfCont+1)*numberOfGenerators+j]=*(futureNetVector[(numberOfCont+2)]->getPowSelf()+j); // what I think about myself
-				powerNextBel[(2*numberOfCont+1)*numberOfGenerators+j]=*(futureNetVector[(numberOfCont+2)]->getPowNext(0, (numberOfCont+2))+j); // what I think about next door fellow
-				powerPrevBel[(numberOfCont+1)*numberOfGenerators+j]=*(futureNetVector[(numberOfCont+2)]->getPowPrev()+j); // what I think about previous interval
+				for ( int j = 0; j < numberOfLines; ++j ) {
+					if (i == 0) {
+						for (int continCounter=0; continCounter <= numberOfCont; ++continCounter) {
+							for ( int k = 1; k < RNDIntervals; ++k ) {
+								powerNextFlowBel[continCounter*(RNDIntervals-1)*numberOfLines+(k-1)*numberOfLines+j]=*(futureNetVector[i+1]->getPowFlowNext(continCounter, (i+1), k)+j); // what I think about next door fellow
+								powDiffLine[continCounter*(RNDIntervals-1)*numberOfLines+(k-1)*numberOfLines+j]=*(futureNetVector[i+1]->getPowFlowNext(continCounter, (i+1), k)+j)-*(futureNetVector[2+continCounter*(RNDIntervals+RSDIntervals)+(k-1)]->getPowFlowSelf()+j);
+							}
+						}
+					}
+					else {
+						for (int continCounter=0; continCounter <= numberOfCont; ++continCounter) {
+							for ( int k = 1; k < RNDIntervals; ++k ) {
+								if (i==1+continCounter*(RNDIntervals+RSDIntervals)+(k-1))
+									powerSelfFlowBel[continCounter*(RNDIntervals-1)*numberOfLines+(k-1)*numberOfLines+j]=*(futureNetVector[i+1]->getPowFlowSelf()+j);
+							}
+						}
+					}
+				}
 			}
 			// Tuning the alphaAPP
 			if ( ( iterCountAPP > 5 ) && ( iterCountAPP <= 10 ) )
@@ -325,11 +345,11 @@ int main() // function main begins program execution
 			if ( ( iterCountAPP > 20 ) )
 				alphaAPP = 10;
 			// Update power disagreement Lagrange Multipliers
-			for ( int j = 0; j < numberOfGenerators; ++j ) {
-				for (int continCounter=0; continCounter <= numberOfCont; ++continCounter) {
-					lambdaAPP[2*(continCounter)*numberOfGenerators+j] = lambdaAPP[2*(continCounter)*numberOfGenerators+j] + alphaAPP * (powDiff[2*(continCounter)*numberOfGenerators+j]); // what I think about myself Vs. what next door fellow thinks about me
-					lambdaAPP[(2*(continCounter)+1)*numberOfGenerators+j] = lambdaAPP[(2*(continCounter)+1)*numberOfGenerators+j] + alphaAPP * (powDiff[(2*(continCounter)+1)*numberOfGenerators+j]); // what I think about next door fellow Vs. what next door fellow thinks about himself
-				}
+			for ( int i = 0; i < consLagDim; ++i ) {
+				lambdaAPP[i] = lambdaAPP[i] + alphaAPP * (powDiff[i]);
+			}
+			for ( int i = 0; i < consLineLagDim; ++i ) {
+				lambdaAPPLine[i] = lambdaAPPLine[i] + alphaAPP * (powDiffLine[i]);
 			}
 			//++iterCountAPP; // increment the APP iteration counter
 			double tolAPP = 0.0;
@@ -337,6 +357,10 @@ int main() // function main begins program execution
 			for ( int i = 0; i < consLagDim; ++i ) {
 				tolAPP = tolAPP + pow(powDiff[i], 2);
 				matrixResultAPPOut << powDiff[i] << "\t";
+			}
+			for ( int i = 0; i < consLineLagDim; ++i ) {
+				tolAPP = tolAPP + pow(powDiffLine[i], 2);
+				matrixResultAPPOut << powDiffLine[i] << "\t";
 			}
 			matrixResultAPPOut << "\n";
 			finTol = sqrt(tolAPP);
@@ -355,7 +379,7 @@ int main() // function main begins program execution
 	cout << "\nVirtual Outermost layer Execution time (s): " << static_cast<double>( stop_s - start_s ) / CLOCKS_PER_SEC  - actualSuperNetTime + accumulate(largestSuperNetTimeVec.begin(), largestSuperNetTimeVec.end(), 0.0);
 	cout << "\nExecution time (s): " << static_cast<double>( stop_s - start_s ) / CLOCKS_PER_SEC << endl;
 	delete environmentGUROBI; // Free the memory of the GUROBI environment object
-	for ( int i = 0; i <= (numberOfCont+2); ++i ) {
+	for ( int i = 0; i <= (numberOfCont+1)*(RNDIntervals+RSDIntervals)+1; ++i ) {
 		delete futureNetVector[i]; // Free the memory of future network instances
 	}
 	return 0; // indicates successful program termination
