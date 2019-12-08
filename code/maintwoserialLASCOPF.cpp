@@ -46,17 +46,17 @@ int main() // function main begins program execution
 
 	cout << endl << "\n*** SUPERNETWORK INITIALIZATION STAGE BEGINS ***\n" << endl << endl;
 	GRBEnv* environmentGUROBI = new GRBEnv("GUROBILogFile.log"); // GUROBI Environment object for storing the different optimization models
-	superNetwork* supernet = new superNetwork( netID, solverChoice, setRhoTuning, 0, 0, 0, 0, nextChoice, dummyIntervalChoice, contSolverAccuracy, 0 ); // create the network instances for the future dummy zero dispatch intervals
+	superNetwork* supernet = new superNetwork( netID, solverChoice, setRhoTuning, 0, 0, 0, 0, nextChoice, dummyIntervalChoice, contSolverAccuracy, 0, RNDIntervals, RSDIntervals ); // create the network instances for the future dummy zero dispatch intervals
 	int numberOfCont = supernet->retContCount(); // gets the number of contingency scenarios in the variable numberOfCont
 	futureNetVector.push_back( supernet ); // push to the vector of future network instances 
-	superNetwork* supernet1 = new superNetwork( netID, solverChoice, setRhoTuning, 0, 0, 1, 0, nextChoice, dummyIntervalChoice, contSolverAccuracy, 0 ); // create the network instances for the future upcoming dispatch intervals
+	superNetwork* supernet1 = new superNetwork( netID, solverChoice, setRhoTuning, 0, 0, 1, 0, nextChoice, dummyIntervalChoice, contSolverAccuracy, 0, RNDIntervals, RSDIntervals ); // create the network instances for the future upcoming dispatch intervals
 	futureNetVector.push_back( supernet1 ); // push to the vector of future network instances 
 	for ( int i = 0; i <= numberOfCont; ++i ) {
 		for ( int j = 1; j < RNDIntervals; ++j ) {
 			int lineOutaged = 0; // the serial number of transmission line outaged in any scenario: default value is zero
 			if (i > 0) // for the post-contingency scenarios
 				lineOutaged = futureNetVector[0]->indexOfLineOut(i); // gets the serial number of transmission line outaged in this scenario 
-			superNetwork* supernet = new superNetwork( netID, solverChoice, setRhoTuning, i, j, 2, last, nextChoice, dummyIntervalChoice, contSolverAccuracy, lineOutaged ); // create the network instances for the future next-to-upcoming-dispatch intervals for pos-contingency cases
+			superNetwork* supernet = new superNetwork( netID, solverChoice, setRhoTuning, i, j, 2, last, nextChoice, dummyIntervalChoice, contSolverAccuracy, lineOutaged, RNDIntervals, RSDIntervals ); // create the network instances for the future next-to-upcoming-dispatch intervals for pos-contingency cases
 			futureNetVector.push_back( supernet ); // push to the vector of future network instances
 		}
 		for ( int j = 0; j <= RSDIntervals; ++j ) {
@@ -65,7 +65,7 @@ int main() // function main begins program execution
 				lineOutaged = futureNetVector[0]->indexOfLineOut(i); // gets the serial number of transmission line outaged in this scenario 
 			if (j==RSDIntervals) // set the flag to 1 to indicate the last interval
 				last = 1; // set the flag to 1 to indicate the last interval
-			superNetwork* supernet = new superNetwork( netID, solverChoice, setRhoTuning, i, (j+RNDIntervals), 2, last, nextChoice, dummyIntervalChoice, contSolverAccuracy, lineOutaged ); // create the network instances for the future next-to-upcoming-dispatch intervals for pos-contingency cases
+			superNetwork* supernet = new superNetwork( netID, solverChoice, setRhoTuning, i, (j+RNDIntervals), 2, last, nextChoice, dummyIntervalChoice, contSolverAccuracy, lineOutaged, RNDIntervals, RSDIntervals ); // create the network instances for the future next-to-upcoming-dispatch intervals for pos-contingency cases
 			futureNetVector.push_back( supernet ); // push to the vector of future network instances
 		}
 	}

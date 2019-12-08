@@ -23,6 +23,7 @@ private:
 	int consLagDim; // Dimension of the vectors of APP Lagrange Multipliers and Power Generation Consensus	
 	double finTol; // Initial Guess of the Final tolerance of the APP iteration/Stopping criterion
 	int intervalCount; // count of the dispatch interval to which the particular network instance for the coarse grain belongs
+	int intervalClass; // class of the dispatch interval to which the particular network instance for the coarse grain belongs i.e. dummy (0)/forthcoming(1)/subsequent(2)
 	int lastInterval; // Flas to indicate if the network belongs to last interval: 0=not last interval; 1=last interval
 	vector< Network* > contNetVector; // Vector of base-case and contingency scenario network objects
 	vector<double> singleNetTimeVec;
@@ -30,11 +31,11 @@ private:
 	double virtualNetExecTime;
 
 public:
-	superNetwork(int, int, int, int, int, int, int, int, int, int); // constructor
+	superNetwork(int, int, int, int, int, int, int, int, int, int, int, int, int); // constructor
 	~superNetwork(); // destructor	
 	int indexOfLineOut(int); // Retruns the serial number of the line that is outaged in a particular post-contingency scenario 
 	int retContCount(); // gets the number of contingency scenarios in the variable numberOfCont
-	void runSimulation(int, double [], double [], double [], double [], double [], GRBEnv*); // runs the distributed SCOPF simulations using ADMM-PMP with CVXGEN custom solver
+	void runSimulation(int, double [], double [], double [], double [], double [], double [], double [], double [], double [], GRBEnv*); // runs the distributed SCOPF simulations using ADMM-PMP with CVXGEN custom solver
 	int getGenNumber(); // returns the number of Generators in the network
 	double *getPowPrev(); // returns what I think about previous dispatch interval generators
 	double *getPowNext(int, int); // returns what I think about next door fellow

@@ -12,24 +12,27 @@
 #include "network.h" // Network class definition
 using namespace std;
 
-superNetwork::superNetwork(int networkID, int choiceSolver, int rhoTuning, int postContScen, int dispInterval, int lastFlag, int nextChoice, int dummyDispInt, int continSolAccuracy, int outagedLine) // function main begins program execution
+superNetwork::superNetwork(int networkID, int choiceSolver, int rhoTuning, int postContScen, int restorationInt, int dispIntervalClass, int lastFlag, int nextChoice, int dummyDispInt, int continSolAccuracy, int outagedLine, int RNDIntervals, int RSDIntervals) // function main begins program execution
 {
 	netID=networkID; // Network ID number to indicate the type of the system with specifying the number of buses/nodes
 	solverChoice=choiceSolver;  // Solver choice among CVXGEN-ADMM-PMP+APP fully distributed, GUROBI-ADMM-PMP+APP fully distributed, or GUROBI APP half distributed
 	setRhoTuning=rhoTuning; // parameter to select adaptive rho, fixed rho, and type of adaptive rho}
 	postContingency = postContScen; // future next-to-upcoming-dispatch intervals for pos-contingency cases, 0 for no contingency, assumed to have actually taken place
-	intervalCount=dispInterval; // count of the dispatch interval to which the particular network instance for the coarse grain belongs
+	intervalCount=restorationInt; // count of the dispatch interval to which the particular network instance for the coarse grain belongs
+	intervalClass=dispIntervalClass; // class of the dispatch interval to which the particular network instance for the coarse grain belongs i.e. dummy (0)/forthcoming(1)/subsequent(2)
 	lastInterval=lastFlag; // Flas to indicate if the network belongs to last interval: 0=not last interval; 1=last interval
 	cout << endl << "\n*** NETWORK INITIALIZATION STAGE BEGINS ***\n" << endl << endl;
 	Network* network = new Network( netID, postContingency, 0, 0, 0, solverChoice, dummyDispInt, continSolAccuracy, intervalCount, lastInterval, nextChoice, outagedLine ); // create network object corresponding to the base case
 	numberOfCont = network->retContCount(); // gets the number of contingency scenarios in the variable numberOfCont
 	contNetVector.push_back( network ); // push to the vector of network instances 
-	for ( int i = 1; i <= numberOfCont; ++i ) {
-		if (i!=postContingency) { // As long as the index of scenarios is not the same as that of the post-contingency index of the base case in 2nd interval
-			int lineOutaged = contNetVector[0]->indexOfLineOut(i); // gets the serial number of transmission line outaged in this scenario 
-			if (lineOutaged != outagedLine) {
-				Network* network = new Network( netID, postContingency, i, lineOutaged, 1, solverChoice, dummyDispInt, continSolAccuracy, intervalCount, lastInterval, nextChoice, outagedLine ); // create the network instances for the contingency scenarios, which includes as many networks as the number of contingency scenarios
-				contNetVector.push_back( network ); // push to the vector of network instances
+	if ( (intervalCount<=0) || (intervalCount==(RNDIntervals+RSDIntervals)) ){
+		for ( int i = 1; i <= numberOfCont; ++i ) {
+			if (i!=postContingency) { // As long as the index of scenarios is not the same as that of the post-contingency index of the base case in 2nd interval
+				int lineOutaged = contNetVector[0]->indexOfLineOut(i); // gets the serial number of transmission line outaged in this scenario 
+				if (lineOutaged != outagedLine) {
+					Network* network = new Network( netID, postContingency, i, lineOutaged, 1, solverChoice, dummyDispInt, continSolAccuracy, intervalCount, lastInterval, nextChoice, outagedLine ); // create the network instances for the contingency scenarios, which includes as many networks as the number of contingency scenarios
+					contNetVector.push_back( network ); // push to the vector of network instances
+				}
 			}
 		}
 	}
@@ -48,7 +51,7 @@ superNetwork::~superNetwork() // Destructor
 double superNetwork::getvirtualNetExecTime(){return virtualNetExecTime;}
 int superNetwork::indexOfLineOut(int postScenar){return contNetVector[0]->indexOfLineOut(postScenar);} // Retruns the serial number of the line that is outaged in a particular post-contingency scenario 
 int superNetwork::retContCount() {return numberOfCont;} // gets the number of contingency scenarios in the variable numberOfCont
-void superNetwork::runSimulation(int outerIter, double LambdaOuter[], double powDiffOuter[], double powSelfBel[], double powNextBel[], double powPrevBel[], GRBEnv* environmentGUROBI) { // runs the distributed SCOPF simulations using ADMM-PMP with CVXGEN custom solver
+void superNetwork::runSimulation(int outerIter, double LambdaOuter[], double powDiffOuter[], double powSelfBel[], double powNextBel[], double powPrevBel[], double lambdaLine[], double powerDiffLine[], double powSelfFlowBel[], double powNextFlowBel[], GRBEnv* environmentGUROBI) { // runs the distributed SCOPF simulations using ADMM-PMP with CVXGEN custom solver
 	double lambdaAPP[consLagDim]; // Array of APP Lagrange Multipliers for achieving consensus among the values of power generated, as guessed by scenarios
 	double powDiff[consLagDim]; // Array of lack of consensus between generation values, as guessed by scenarios
 	double alphaAPP=100; // APP Parameter/Path-length
@@ -61,9 +64,9 @@ void superNetwork::runSimulation(int outerIter, double LambdaOuter[], double pow
 	if ((solverChoice==1) || (solverChoice==2)) { // APMP Fully distributed, Bi-layer (N-1) SCOPF Simulation 
 		string outputAPPFileName;
 		if (solverChoice==1)
-			outputAPPFileName = "/home/samie/code/ADMM_Based_Proximal_Message_Passing_Distributed_OPF/LASCOPF_Post_Contingency_Restoration/output/ADMM_PMP_GUROBI/resultAPP-SCOPF_Interval:"+to_string(intervalCount)+"PCScen:"+to_string(postContingency)+".txt";
+			outputAPPFileName = "/home/samie/code/ADMM_Based_Proximal_Message_Passing_Distributed_OPF/LASCOPF_Post_Contingency_Restoration_Temperature/output/ADMM_PMP_GUROBI/resultAPP-SCOPF_Interval:"+to_string(intervalCount)+"PCScen:"+to_string(postContingency)+".txt";
 		if (solverChoice==2)
-			outputAPPFileName = "/home/samie/code/ADMM_Based_Proximal_Message_Passing_Distributed_OPF/LASCOPF_Post_Contingency_Restoration/output/ADMM_PMP_CVXGEN/resultAPP-SCOPF_Interval:"+to_string(intervalCount)+"PCScen:"+to_string(postContingency)+".txt";
+			outputAPPFileName = "/home/samie/code/ADMM_Based_Proximal_Message_Passing_Distributed_OPF/LASCOPF_Post_Contingency_Restoration_Temperature/output/ADMM_PMP_CVXGEN/resultAPP-SCOPF_Interval:"+to_string(intervalCount)+"PCScen:"+to_string(postContingency)+".txt";
 		ofstream matrixResultAPPOut( outputAPPFileName, ios::out ); // create a new file result.txt to output the results
 
 		// exit program if unable to create file
