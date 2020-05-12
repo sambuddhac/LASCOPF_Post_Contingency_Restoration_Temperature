@@ -20,6 +20,8 @@ superNetwork::superNetwork(int networkID, int choiceSolver, int rhoTuning, int p
 	postContingency = postContScen; // future next-to-upcoming-dispatch intervals for pos-contingency cases, 0 for no contingency, assumed to have actually taken place
 	intervalCount=restorationInt; // count of the dispatch interval to which the particular network instance for the coarse grain belongs
 	intervalClass=dispIntervalClass; // class of the dispatch interval to which the particular network instance for the coarse grain belongs i.e. dummy (0)/forthcoming(1)/subsequent(2)
+	RNDintervals = RNDIntervals; // Initialize restoration to normal duration
+	RSDintervals = RSDIntervals; // Initialize restoration to secure duration
 	lastInterval=lastFlag; // Flas to indicate if the network belongs to last interval: 0=not last interval; 1=last interval
 	cout << endl << "\n*** NETWORK INITIALIZATION STAGE BEGINS ***\n" << endl << endl;
 	Network* network = new Network( netID, postContingency, 0, 0, 0, solverChoice, dummyDispInt, continSolAccuracy, intervalCount, lastInterval, nextChoice, outagedLine ); // create network object corresponding to the base case
@@ -84,63 +86,98 @@ void superNetwork::runSimulation(int outerIter, double LambdaOuter[], double pow
 		//do { // APP Coarse grain iterations start
 		largestNetTimeVec.clear();
 		double actualNetTime = 0;
-		//do {
-		for ( iterCountAPP = 1; ((iterCountAPP <= 10) /*&& (finTol>=0.7)*/); ++iterCountAPP ) { // Start the inner APP iterations among base-case and contngency scenarios for SCOPFs
-			singleNetTimeVec.clear();
-			for ( int netSimCount = 0; netSimCount < (numberOfCont+1); ++netSimCount ) { // Iterate over the base-case and contingency scenarios
-				if ((netSimCount == 0) || ((netSimCount > 0)&&(netSimCount!=postContingency))) { // Calculate for the base-case or contingency scenarios (or, remaining contingency scenarios, for post-contingency base-case)
-					if ((postContingency > 0)&&(netSimCount>postContingency)) { // If the base case is an outage case and the contingency scenario considered has index value greater than that of the outage case, then skip one index, and compensate for the skiped one in netSimCount
-						cout << "\nStart of " << iterCountAPP << " -th Innermost APP iteration for " << netSimCount+1 << " -th base/contingency scenario" << endl;
-						contNetVector[netSimCount-1]->runSimulation(outerIter, LambdaOuter, powDiffOuter, setRhoTuning, iterCountAPP, lambdaAPP, powDiff, powSelfBel, powNextBel, powPrevBel, environmentGUROBI); // start simulation
-						double singleNetTime = contNetVector[netSimCount-1]->returnVirtualExecTime();
-						actualNetTime += singleNetTime;
-						singleNetTimeVec.push_back(singleNetTime);
-					}
-					else { // If either the base case (outaged or not outaged) or contingency scenario with index less than that of the outage case
-						cout << "\nStart of " << iterCountAPP << " -th Innermost APP iteration for " << netSimCount+1 << " -th base/contingency scenario" << endl;
-						contNetVector[netSimCount]->runSimulation(outerIter, LambdaOuter, powDiffOuter, setRhoTuning, iterCountAPP, lambdaAPP, powDiff, powSelfBel, powNextBel, powPrevBel, environmentGUROBI); // start simulation
-						double singleNetTime = contNetVector[netSimCount]->returnVirtualExecTime();
-						actualNetTime += singleNetTime;
-						singleNetTimeVec.push_back(singleNetTime);
+		if ((intervalCount==0) || (intervalCount==(RNDintervals+RSDintervals))) { // Solve full SCOPF only for the present/forthcoming, dummy, and last intervals
+			//do {
+			for ( iterCountAPP = 1; ((iterCountAPP <= 10) /*&& (finTol>=0.7)*/); ++iterCountAPP ) { // Start the inner APP iterations among base-case and contngency scenarios for SCOPFs
+				singleNetTimeVec.clear();
+				for ( int netSimCount = 0; netSimCount < (numberOfCont+1); ++netSimCount ) { // Iterate over the base-case and contingency scenarios
+					if ((netSimCount == 0) || ((netSimCount > 0)&&(netSimCount!=postContingency))) { // Calculate for the base-case or contingency scenarios (or, remaining contingency scenarios, for post-contingency base-case)
+						if ((postContingency > 0)&&(netSimCount>postContingency)) { // If the base case is an outage case and the contingency scenario considered has index value greater than that of the outage case, then skip one index, and compensate for the skiped one in netSimCount
+							cout << "\nStart of " << iterCountAPP << " -th Innermost APP iteration for " << netSimCount+1 << " -th base/contingency scenario" << endl;
+							contNetVector[netSimCount-1]->runSimulation(outerIter, LambdaOuter, powDiffOuter, setRhoTuning, iterCountAPP, lambdaAPP, powDiff, powSelfBel, powNextBel, powPrevBel, lambdaLine, powerDiffLine, powSelfFlowBel, powNextFlowBel, environmentGUROBI); // start simulation
+							double singleNetTime = contNetVector[netSimCount-1]->returnVirtualExecTime();
+							actualNetTime += singleNetTime;
+							singleNetTimeVec.push_back(singleNetTime);
+						}
+						/*if ((postContingency > 0)&&(netSimCount<postContingency)) { // If either the base case (outaged or not outaged) or contingency scenario with index less than that of the outage case
+							cout << "\nStart of " << iterCountAPP << " -th Innermost APP iteration for " << netSimCount+1 << " -th base/contingency scenario" << endl;
+							contNetVector[netSimCount]->runSimulation(outerIter, LambdaOuter, powDiffOuter, setRhoTuning, iterCountAPP, lambdaAPP, powDiff, powSelfBel, powNextBel, powPrevBel, environmentGUROBI); // start simulation
+							double singleNetTime = contNetVector[netSimCount]->returnVirtualExecTime();
+							actualNetTime += singleNetTime;
+							singleNetTimeVec.push_back(singleNetTime);
+						}*/
+						else /*if (postContingency == 0)*/{ // If the base case is not outaged (pre- or post-contingency) & contingency scenarios
+							cout << "\nStart of " << iterCountAPP << " -th Innermost APP iteration for " << netSimCount+1 << " -th base/contingency scenario" << endl;
+							contNetVector[netSimCount]->runSimulation(outerIter, LambdaOuter, powDiffOuter, setRhoTuning, iterCountAPP, lambdaAPP, powDiff, powSelfBel, powNextBel, powPrevBel, lambdaLine, powerDiffLine, powSelfFlowBel, powNextFlowBel, environmentGUROBI); // start simulation
+							double singleNetTime = contNetVector[netSimCount]->returnVirtualExecTime();
+							actualNetTime += singleNetTime;
+							singleNetTimeVec.push_back(singleNetTime);
+						}
 					}
 				}
-			}
-			double largestNetTime = *max_element(singleNetTimeVec.begin(), singleNetTimeVec.end());
-			largestNetTimeVec.push_back(largestNetTime);
-			for ( int i = 0; i < numberOfCont; ++i ) {
-				if ((i+1) < postContingency) {
+				double largestNetTime = *max_element(singleNetTimeVec.begin(), singleNetTimeVec.end());
+				largestNetTimeVec.push_back(largestNetTime);
+				if (postContingency>0) { // For outaged case
+					for ( int i = 0; i < numberOfCont; ++i ) {
+						if ((i+1) < postContingency) {
+							for ( int j = 0; j < numberOfGenerators; ++j ) {
+								//full SCOPF disagreements only for the present/forthcoming, dummy, and last intervals
+								powDiff[i*numberOfGenerators+j]=*(contNetVector[0]->getPowSelf()+j)-*(contNetVector[i+1]->getPowSelf()+j); // what base thinks about itself Vs. what contingency thinks about base
+							}
+						}
+						if ((i+1) > postContingency) {
+							for ( int j = 0; j < numberOfGenerators; ++j ) {
+								//full SCOPF disagreements only for the present/forthcoming, dummy, and last intervals
+								powDiff[i*numberOfGenerators+j]=*(contNetVector[0]->getPowSelf()+j)-*(contNetVector[i]->getPowSelf()+j); // what base thinks about itself Vs. what contingency thinks about base
+							}
+						}				
+					}
+				}
+				else { // For non-outaged case or base-case
+					for ( int i = 1; i <= numberOfCont; ++i ) {
+						for ( int j = 0; j < numberOfGenerators; ++j ) {
+							//full SCOPF disagreements only for the present/forthcoming, dummy, and last intervals
+							powDiff[(i-1)*numberOfGenerators+j]=*(contNetVector[0]->getPowSelf()+j)-*(contNetVector[i]->getPowSelf()+j); // what base thinks about itself Vs. what contingency thinks about base
+						}				
+					}
+				}
+				// Tuning the alphaAPP
+				if ( ( iterCountAPP > 5 ) && ( iterCountAPP <= 10 ) )
+					alphaAPP = 75.0;
+				if ( ( iterCountAPP > 10 ) && ( iterCountAPP <= 15 ) )
+					alphaAPP = 2.5;
+				if ( ( iterCountAPP > 15 ) && ( iterCountAPP <= 20 ) )
+					alphaAPP = 1.25;
+				if ( ( iterCountAPP > 20 ) )
+					alphaAPP = 0.5;
+				for ( int i = 0; i < numberOfCont; ++i ) {
 					for ( int j = 0; j < numberOfGenerators; ++j ) {
-						powDiff[i*numberOfGenerators+j]=*(contNetVector[0]->getPowSelf()+j)-*(contNetVector[i+1]->getPowSelf()+j); // what base thinks about itself Vs. what contingency thinks about base
+						lambdaAPP[i*numberOfGenerators+j] = lambdaAPP[i*numberOfGenerators+j] + alphaAPP * (powDiff[i*numberOfGenerators+j]); // what I think about myself Vs. what next door fellow thinks about me
 					}
 				}
-				if ((i+1) > postContingency) {
-					for ( int j = 0; j < numberOfGenerators; ++j ) {
-						powDiff[i*numberOfGenerators+j]=*(contNetVector[0]->getPowSelf()+j)-*(contNetVector[i]->getPowSelf()+j); // what base thinks about itself Vs. what contingency thinks about base
-					}
-				}				
-			}
-			// Tuning the alphaAPP
-			if ( ( iterCountAPP > 5 ) && ( iterCountAPP <= 10 ) )
-				alphaAPP = 75.0;
-			if ( ( iterCountAPP > 10 ) && ( iterCountAPP <= 15 ) )
-				alphaAPP = 2.5;
-			if ( ( iterCountAPP > 15 ) && ( iterCountAPP <= 20 ) )
-				alphaAPP = 1.25;
-			if ( ( iterCountAPP > 20 ) )
-				alphaAPP = 0.5;
-			for ( int i = 0; i < numberOfCont; ++i ) {
-				for ( int j = 0; j < numberOfGenerators; ++j ) {
-					lambdaAPP[i*numberOfGenerators+j] = lambdaAPP[i*numberOfGenerators+j] + alphaAPP * (powDiff[i*numberOfGenerators+j]); // what I think about myself Vs. what next door fellow thinks about me
+				double tolAPP = 0.0;
+				for ( int i = 0; i < consLagDim; ++i ) {
+					tolAPP = tolAPP + pow(powDiff[i], 2);
 				}
+				finTol = sqrt(tolAPP);
+				matrixResultAPPOut << iterCountAPP << "\t" << finTol << "\n";
+				//++iterCountAPP; // increment the APP iteration counter
+			//} while (finTol>=0.5); //Check the termination criterion of the APP iterations
 			}
-			double tolAPP = 0.0;
-			for ( int i = 0; i < consLagDim; ++i ) {
-				tolAPP = tolAPP + pow(powDiff[i], 2);
-			}
-			finTol = sqrt(tolAPP);
-			matrixResultAPPOut << iterCountAPP << "\t" << finTol << "\n";
-			//++iterCountAPP; // increment the APP iteration counter
-		//} while (finTol>=0.5); //Check the termination criterion of the APP iterations
+		}
+		if ((intervalCount>=1) && (intervalCount<=(RNDintervals-1))) {
+			cout << "\nStart of " << iterCountAPP << " -th Innermost APP iteration for " << netSimCount+1 << " -th base/contingency scenario" << endl;
+			contNetVector[0]->runSimulation(outerIter, LambdaOuter, powDiffOuter, setRhoTuning, iterCountAPP, lambdaAPP, powDiff, powSelfBel, powNextBel, powPrevBel, environmentGUROBI); // start simulation
+			double singleNetTime = contNetVector[0]->returnVirtualExecTime();
+			actualNetTime += singleNetTime;
+			singleNetTimeVec.push_back(singleNetTime);
+		}
+		if ((intervalCount>=RNDintervals) && (intervalCount<(RNDintervals+RSDintervals))) {
+			cout << "\nStart of " << iterCountAPP << " -th Innermost APP iteration for " << netSimCount+1 << " -th base/contingency scenario" << endl;
+			contNetVector[0]->runSimulation(outerIter, LambdaOuter, powDiffOuter, setRhoTuning, iterCountAPP, lambdaAPP, powDiff, powSelfBel, powNextBel, powPrevBel, environmentGUROBI); // start simulation
+			double singleNetTime = contNetVector[0]->returnVirtualExecTime();
+			actualNetTime += singleNetTime;
+			singleNetTimeVec.push_back(singleNetTime);
 		}
 		//****************************************END OF AUXILIARY PROBLEM PRINCIPLE (APP) COARSE GRAINED DECOMPOSITION COMPONENT******************************************************//
 
@@ -261,18 +298,10 @@ double *superNetwork::getPowPrev()
 
 double *superNetwork::getPowNext(int contingencyCounter, int dispIntCount)
 {
-	if (dispIntCount==1) {
-		if ((solverChoice==1) || (solverChoice==2))
-			return (contNetVector[0])->getPowNext();
-		if ((solverChoice==3) || (solverChoice==4))
-			return (contNetVector[0])->getPowNextGUROBI();
-	}
-	else {
-		if ((solverChoice==1) || (solverChoice==2))
-			return (contNetVector[0])->getPowNext();
-		if ((solverChoice==3) || (solverChoice==4))
-			return (contNetVector[0])->getPowNextGUROBI();
-	}
+	if ((solverChoice==1) || (solverChoice==2))
+		return (contNetVector[0])->getPowNext();
+	if ((solverChoice==3) || (solverChoice==4))
+		eturn (contNetVector[0])->getPowNextGUROBI();
 } // returns what I think about next door fellow 
 
 int superNetwork::getGenNumber() //Function getGenNumber begins

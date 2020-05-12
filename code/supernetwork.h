@@ -20,6 +20,7 @@ private:
 	int numberOfGenerators; // get the number of generators in the system
 	int iterCountAPP; // Iteration counter for APP coarse grain decomposition algorithm
 	double alphaAPP = 5.0; // APP Parameter/Path-length
+	int RNDintervals, RSDintervals; // Restoration to normal and restoration to secure durations
 	int consLagDim; // Dimension of the vectors of APP Lagrange Multipliers and Power Generation Consensus	
 	double finTol; // Initial Guess of the Final tolerance of the APP iteration/Stopping criterion
 	int intervalCount; // count of the dispatch interval to which the particular network instance for the coarse grain belongs
