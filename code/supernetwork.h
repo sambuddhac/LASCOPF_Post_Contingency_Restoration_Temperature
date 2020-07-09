@@ -26,6 +26,7 @@ private:
 	int intervalCount; // count of the dispatch interval to which the particular network instance for the coarse grain belongs
 	int intervalClass; // class of the dispatch interval to which the particular network instance for the coarse grain belongs i.e. dummy (0)/forthcoming(1)/subsequent(2)
 	int lastInterval; // Flas to indicate if the network belongs to last interval: 0=not last interval; 1=last interval
+	int numberOfTransLines; // get the number of transmission lines in the system
 	vector< Network* > contNetVector; // Vector of base-case and contingency scenario network objects
 	vector<double> singleNetTimeVec;
 	vector<double> largestNetTimeVec;
@@ -42,6 +43,7 @@ public:
 	double *getPowNext(int, int); // returns what I think about next door fellow
 	double *getPowSelf(); // returns the values of what I think about myself
 	double getvirtualNetExecTime();
+	int getTransNumber(); //Function getTransNumber() begins
 }; // end class superNetwork
 
 #endif // SUPERNETWORK_H

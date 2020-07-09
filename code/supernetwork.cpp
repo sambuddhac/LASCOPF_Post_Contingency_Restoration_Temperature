@@ -42,6 +42,7 @@ superNetwork::superNetwork(int networkID, int choiceSolver, int rhoTuning, int p
 	cout << "\n*** NETWORK INITIALIZATION STAGE ENDS ***\n" << endl;
 
 	numberOfGenerators = contNetVector[0]->getGenNumber(); // get the number of generators in the system
+	numberOfTransLines = contNetVector[0]->getTranNumber(); // get the number of transmission lines in the system
 	consLagDim = numberOfCont*numberOfGenerators; // Dimension of the vectors of APP Lagrange Multipliers and Power Generation Consensus
 }
 
@@ -308,3 +309,8 @@ int superNetwork::getGenNumber() //Function getGenNumber begins
 {
 	return numberOfGenerators;
 } // end of getGenNumber function
+
+int superNetwork::getTransNumber() //Function getTransNumber() begins
+{
+    return numberOfTransLines;
+}
