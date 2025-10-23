@@ -71,6 +71,31 @@ private:
 	int scenarioContCount; // Contingency scenario index; 0 for base case
 	int postContScenCount; // For the second interval, the scenario count of the post-contingency scenario; 0 for no assumed outage
 	double objOpt; // Optimal value of objective
+	
+	// Helper functions for array initialization and complex logic
+	void initializeContingencyArrays(double BAPPNew[], double LambdaAPPNew[], double BAPP[], double LambAPP1[]);
+	void initializeExternalArrays(double BAPPExtNew[], double DAPPExtNew[], double LambdaAPP1ExtNew[], 
+	                              double LambdaAPP2ExtNew[], double PgNextAPPNew[], double BAPPExternal[], 
+	                              double DAPPExternal[], double LambAPP1External[], double LambAPP2External[], 
+	                              double PgenNextAPP[]);
+	void handleBaseCaseScenario(int outerAPPIt, int APPItCount, double gsRho, double Pgenprev, double Pgenavg, 
+	                           double Powerprice, double Angpriceavg, double Angavg, double Angprice, 
+	                           double PgenPrevAPP, double PgenAPP, double PgenAPPInner, double PgenNextAPP[], 
+	                           double AAPPExternal, double BAPPExternal[], double DAPPExternal[], 
+	                           double LambAPP1External[], double LambAPP2External[], double LambAPP3External, 
+	                           double LambAPP4External, double BAPP[], double LambAPP1[], double BAPPNew[], 
+	                           double LambdaAPPNew[], double BAPPExtNew[], double DAPPExtNew[], 
+	                           double LambdaAPP1ExtNew[], double LambdaAPP2ExtNew[], double PgNextAPPNew[]);
+	void handleContingencyScenario(int APPItCount, double gsRho, double Pgenprev, double Pgenavg, 
+	                              double Powerprice, double Angpriceavg, double Angavg, double Angprice, 
+	                              double PgenPrevAPP, double PgenAPP, double PgenAPPInner, double PgenNextAPP[], 
+	                              double AAPPExternal, double BAPPExternal[], double DAPPExternal[], 
+	                              double LambAPP1External[], double LambAPP2External[], double LambAPP3External, 
+	                              double LambAPP4External, double BAPP[], double LambAPP1[], double BAPPNew[], 
+	                              double LambdaAPPNew[], double BAPPExtNew[], double DAPPExtNew[], 
+	                              double LambdaAPP1ExtNew[], double LambdaAPP2ExtNew[], double PgNextAPPNew[]);
+	double getBaseCaseObjective();
+	double getContingencyObjective();
 }; //end class Generator
 
 #endif // GENERATOR_H
